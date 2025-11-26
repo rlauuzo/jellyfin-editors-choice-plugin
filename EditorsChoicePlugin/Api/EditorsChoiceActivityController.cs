@@ -22,7 +22,7 @@ public class EditorsChoiceActivityController : ControllerBase
     private readonly IUserManager _userManager;
     private readonly ILibraryManager _libraryManager;
     private readonly ILogger<EditorsChoiceActivityController> _logger;
-    private readonly string _scriptPath;
+    private readonly string _resourceNamespace;
 
     public EditorsChoiceActivityController(IUserManager userManager, ILibraryManager libraryManager, ILogger<EditorsChoiceActivityController> logger)
     {
@@ -32,7 +32,7 @@ public class EditorsChoiceActivityController : ControllerBase
 
         _config = Plugin.Instance!.Configuration;
 
-        _scriptPath = GetType().Namespace + ".client.js";
+        _resourceNamespace = GetType().Namespace + ".";
 
         _logger.LogInformation("EditorsChoiceActivityController loaded.");
     }
@@ -43,11 +43,34 @@ public class EditorsChoiceActivityController : ControllerBase
     [Produces("application/javascript")]
     public ActionResult GetClientScript()
     {
-        var scriptStream = Assembly.GetExecutingAssembly().GetManifestResourceStream(_scriptPath);
+        return GetEmbeddedResource("client.js", "application/javascript");
+    }
 
-        if (scriptStream != null)
+    [HttpGet("splide.js")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [Produces("application/javascript")]
+    public ActionResult GetSplideScript()
+    {
+        return GetEmbeddedResource("splide.min.js", "application/javascript");
+    }
+
+    [HttpGet("splide.css")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [Produces("text/css")]
+    public ActionResult GetSplideStyles()
+    {
+        return GetEmbeddedResource("splide.min.css", "text/css");
+    }
+
+    private ActionResult GetEmbeddedResource(string filename, string contentType)
+    {
+        var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream(_resourceNamespace + filename);
+
+        if (stream != null)
         {
-            return File(scriptStream, "application/javascript");
+            return File(stream, contentType);
         }
 
         return NotFound();
@@ -141,13 +164,13 @@ public class EditorsChoiceActivityController : ControllerBase
                         MinCriticRating = minimumCriticRating,
                         MaxParentalRating = parentalRatingScore,
                         HasParentalRating = mustHaveParentRating,
-                        OrderBy = new[] { (ItemSortBy.Random, SortOrder.Ascending) }
+                        OrderBy = [(ItemSortBy.Random, SortOrder.Ascending)]
                     };
                     query.Limit = _config.RandomMediaCount * 2;
                     initialResult = (List<BaseItem>)_libraryManager.GetItemList(query);
 
                     // Get ids of items in the favourites list
-                    List<Guid> itemIds = new List<Guid>();
+                    List<Guid> itemIds = [];
                     foreach (var item in initialResult)
                     {
                         if (!itemIds.Contains(item.Id))
@@ -193,7 +216,7 @@ public class EditorsChoiceActivityController : ControllerBase
                         initialResult = f.GetChildren(activeUser, true).ToList();
 
                         // Get ids of items in the collection
-                        List<Guid> itemIds = new List<Guid>();
+                        List<Guid> itemIds = [];
                         foreach (var item in initialResult)
                         {
                             if (!itemIds.Contains(item.Id))
@@ -210,10 +233,10 @@ public class EditorsChoiceActivityController : ControllerBase
                             MinCriticRating = minimumCriticRating,
                             MaxParentalRating = parentalRatingScore,
                             HasParentalRating = mustHaveParentRating,
-                            OrderBy = new[] { (ItemSortBy.Random, SortOrder.Ascending) },
-                            IsPlayed = _config.ShowPlayed ? null : false
+                            OrderBy = [(ItemSortBy.Random, SortOrder.Ascending)],
+                            IsPlayed = _config.ShowPlayed ? null : false,
+                            Limit = _config.RandomMediaCount * 2
                         };
-                        query.Limit = _config.RandomMediaCount * 2;
                         result = PrepareResult(query, activeUser);
                     }
 
@@ -257,9 +280,9 @@ public class EditorsChoiceActivityController : ControllerBase
                     HasParentalRating = mustHaveParentRating,
                     MinEndDate = newEndDate,
                     OrderBy = new[] { (ItemSortBy.Random, SortOrder.Ascending) },
-                    IsPlayed = _config.ShowPlayed ? null : false
+                    IsPlayed = _config.ShowPlayed ? null : false,
+                    Limit = _config.RandomMediaCount
                 };
-                queryItems.Limit = _config.RandomMediaCount;
                 List<BaseItem> resultItems = PrepareResult(queryItems, activeUser);
 
                 InternalItemsQuery queryMovies = new InternalItemsQuery(activeUser)
@@ -271,9 +294,9 @@ public class EditorsChoiceActivityController : ControllerBase
                     HasParentalRating = mustHaveParentRating,
                     MinPremiereDate = newEndDate,
                     OrderBy = new[] { (ItemSortBy.Random, SortOrder.Ascending) },
-                    IsPlayed = _config.ShowPlayed ? null : false
+                    IsPlayed = _config.ShowPlayed ? null : false,
+                    Limit = _config.RandomMediaCount
                 };
-                queryMovies.Limit = _config.RandomMediaCount;
                 List<BaseItem> resultMovies = PrepareResult(queryMovies, activeUser);
 
                 result = resultItems.Concat(resultMovies).ToList();
@@ -294,15 +317,15 @@ public class EditorsChoiceActivityController : ControllerBase
                     MaxParentalRating = parentalRatingScore,
                     HasParentalRating = mustHaveParentRating,
                     OrderBy = new[] { (ItemSortBy.Random, SortOrder.Ascending) },
-                    IsPlayed = _config.ShowPlayed ? null : false
+                    IsPlayed = _config.ShowPlayed ? null : false,
+                    Limit = _config.RandomMediaCount * 2
                 };
-                query.Limit = _config.RandomMediaCount * 2;
                 result = PrepareResult(query, activeUser);
             }
 
             // Build response
-            response = new Dictionary<string, object>();
-            items = new List<object>();
+            response = [];
+            items = [];
 
             foreach (BaseItem i in result)
             {

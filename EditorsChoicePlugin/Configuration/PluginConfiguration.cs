@@ -1,16 +1,13 @@
+using MediaBrowser.Common.Plugins;
 using MediaBrowser.Model.Plugins;
 
 namespace EditorsChoicePlugin.Configuration;
 
 public class PluginConfiguration : BasePluginConfiguration
 {
-    public PluginConfiguration() { }
-
     public string EditorUserId { get; set; } = "";
 
-    public bool DoScriptInject { get; set; } = true;
-
-    public bool FileTransformation { get; set; } = false;
+    public bool FileTransformation => Plugin.Instance?.FileTransformationPluginEnabled ?? false;
 
     public bool ShowRandomMedia { get; set; } = true;
 

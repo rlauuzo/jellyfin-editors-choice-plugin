@@ -282,18 +282,9 @@
                     <h2>Technical settings</h2>
                     <div class="checkboxContainer">
                         <label>
-                            <input is="emby-checkbox"  type="checkbox" id="DoScriptInject" name="Enable client script injection" label="Enable client script injection">
-                            <span>Enable client script injection</span>
+                            <span>FileTransformation integration</span>
                         </label>
-                        <div class="fieldDescription">This will depend on permissions for the jellyfin-web index.html file. Toggling this mode will take effect after the next restart.</div>
-                    </div>
-
-                    <div class="checkboxContainer">
-                        <label>
-                            <input is="emby-checkbox"  type="checkbox" id="FileTransformation" name="Use FileTransformation plugin" label="Use FileTransformation plugin">
-                            <span>Use FileTransformation plugin (recommended)</span>
-                        </label>
-                        <div class="fieldDescription">Using <a href="https://github.com/IAmParadox27/jellyfin-plugin-file-transformation" target="_blank">the FileTransformation plugin</a> is the easiest way to inject the required script to the Jellyfin homepage. Toggling this mode will take effect after the next restart.</div>
+                        <div class="fieldDescription" id="FileTransformationStatus">Checking FileTransformation plugin status...</div>
                     </div>
 
                     <div class="checkboxContainer">
@@ -328,7 +319,6 @@
                         selectedUserId = config.EditorUserId;
                         //$('#EditorUserId').first().val(config.EditorUserId);
                         $('#DoScriptInject').first().prop('checked', config.DoScriptInject);
-                        $('#FileTransformation').first().prop('checked', config.FileTransformation);
                         $('#ShowRandomMedia').first().prop('checked', config.ShowRandomMedia);
                         $('#FavouritesMode').first().prop('checked', config.Mode == 'FAVOURITES');
                         $('#RandomMode').first().prop('checked', config.Mode == 'RANDOM');
@@ -362,6 +352,13 @@
                         }
 
                         Dashboard.hideLoadingMsg();
+
+                        // Show FileTransformation status note (read-only)
+                        if (config.FileTransformation) {
+                            $('#FileTransformationStatus').html('FileTransformation plugin is enabled. The plugin integration is active.');
+                        } else {
+                            $('#FileTransformationStatus').html('FileTransformation plugin is not enabled. To use it, install <a href="https://github.com/IAmParadox27/jellyfin-plugin-file-transformation" target="_blank">the FileTransformation plugin</a>. Changes take effect after a restart.');
+                        }
 
                         // populate users drop down
                         ApiClient.getUsers().then(function (users) {
@@ -472,7 +469,6 @@
                         }
 
                         config.DoScriptInject = $('#DoScriptInject').first().is(':checked');
-                        config.FileTransformation = $('#FileTransformation').first().is(':checked');
                         config.EnableAutoplay = $('#EnableAutoplay').first().is(':checked');
                         config.AutoplayInterval = $('#AutoplayInterval').first().val();
                         config.ShowRating = $('#ShowRating').first().is(':checked');
@@ -550,23 +546,7 @@
                     $('#NewTimeLimit-container').toggle($('#NewMode').is(':checked'));
                     $('#AutoplayInterval-container').toggle($('#EnableAutoplay').is(':checked'));
                 });
-
-
-                // If user chooses scriptinject or filetransformation, disable the other.
-                $('#DoScriptInject').on('change', function () {
-                    if ($(this).is(':checked')) {
-                        $('#FileTransformation').first().prop('checked', false);
-                    }
-                })
-
-                $('#FileTransformation').on('change', function () {
-                    if ($(this).is(':checked')) {
-                        $('#DoScriptInject').first().prop('checked', false);
-                    }
-                })
-
             })();
-
         </script>
     </div>
 </body>

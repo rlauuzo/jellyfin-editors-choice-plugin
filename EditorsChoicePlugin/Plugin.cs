@@ -5,7 +5,6 @@ using MediaBrowser.Common.Configuration;
 using MediaBrowser.Model.Serialization;
 using System.Globalization;
 using Microsoft.Extensions.Logging;
-using MediaBrowser.Model.Configuration;
 using MediaBrowser.Controller.Configuration;
 
 namespace EditorsChoicePlugin;
@@ -30,15 +29,17 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
 
     public override string Description => base.Description;
 
+    public bool FileTransformationPluginEnabled { get; set; }
+
     public static Plugin? Instance { get; private set; } = null!;
 
     public IEnumerable<PluginPageInfo> GetPages()
     {
-        return new[] {
+        return [
             new PluginPageInfo {
                 Name = this.Name,
                 EmbeddedResourcePath = string.Format(CultureInfo.InvariantCulture, "{0}.Configuration.configPage.html", GetType().Namespace)
             }
-        };
+        ];
     }
 }

@@ -10,16 +10,18 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Jellyfin.Controller" Version="10.11.0" />
-    <PackageReference Include="Jellyfin.Model" Version="10.11.0" />
-    <PackageReference Include="Jellyfin.Common" Version="10.11.0" />
+    <PackageReference Include="Jellyfin.Controller" Version="10.11.3" />
+    <PackageReference Include="Jellyfin.Model" Version="10.11.3" />
+    <PackageReference Include="Jellyfin.Common" Version="10.11.3" />
 
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
   </ItemGroup>
 
   <ItemGroup>
     <EmbeddedResource Include="Configuration\configPage.html" />
     <EmbeddedResource Include="Api\client.js" />
+    <EmbeddedResource Include="Api\splide.min.js" />
+    <EmbeddedResource Include="Api\splide.min.css" />
   </ItemGroup>
 
 </Project>

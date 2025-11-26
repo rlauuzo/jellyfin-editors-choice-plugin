@@ -1,28 +1,5 @@
-const container = `<div class="verticalSection section-1 editorsChoiceContainer">
-    <div class="splide cardScalable">
-        <div class="editorsChoiceScrollButtonsContainer">
-            <div class="emby-scrollbuttons splide__arrows">
-                <button type="button" is="paper-icon-button-light" data-ripple="false" data-direction="left" title="Previous" class="emby-scrollbuttons-button paper-icon-button-light splide__arrow splide__arrow--prev">
-                    <span class="material-icons chevron_left" aria-hidden="true"></span>
-                </button>
-                <button type="button" is="paper-icon-button-light" data-ripple="false" data-direction="right" title="Next" class="emby-scrollbuttons-button paper-icon-button-light splide__arrow splide__arrow--next">
-                    <span class="material-icons chevron_right" aria-hidden="true"></span>
-                </button>
-            </div>
-        </div>
-        <div class="editorsChoicePlayPauseContainer">
-            <button class="splide__toggle emby-scrollbuttons-button paper-icon-button-light" type="button">
-                <span class="splide__toggle__play material-icons play_arrow" aria-hidden="true"></span>
-                <span class="splide__toggle__pause material-icons pause" aria-hidden="true"></span>
-            </button>
-        </div>
-        <div class="splide__track">
-            <div is="emby-itemscontainer" class="editorsChoiceItemsContainer splide__list animatedScrollX">
-            </div>
-        </div>
-    </div>
-</div>
-
+// CSS styles
+const editorsChoiceStyles = `
 <style>
     .homeSectionsContainer.editorsChoiceAdded {
         padding-top: 0 !important;
@@ -170,7 +147,7 @@ const container = `<div class="verticalSection section-1 editorsChoiceContainer"
         vertical-align: bottom;
     }
 
-    editorsChoiceContainer .sectionTitle-cards {
+    .editorsChoiceContainer .sectionTitle-cards {
         padding-bottom: 0.35em;
     }
 
@@ -189,190 +166,255 @@ const container = `<div class="verticalSection section-1 editorsChoiceContainer"
         }
     }
 </style>
-
 `;
 
-// https://dev.to/codebubb/how-to-shuffle-an-array-in-javascript-2ikj#:~:text=the%20fisher-yates%20algorith
-function shuffle(old_array) {
-    var array = old_array
-    for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        const temp = array[i];
-        array[i] = array[j];
-        array[j] = temp;
-    }
-    return array;
-}
+// Container HTML template
+var containerTemplate = `<div class="verticalSection section-1 editorsChoiceContainer">
+    <div class="splide cardScalable">
+        <div class="editorsChoiceScrollButtonsContainer">
+            <div class="emby-scrollbuttons splide__arrows">
+                <button type="button" is="paper-icon-button-light" data-ripple="false" data-direction="left" title="Previous" class="emby-scrollbuttons-button paper-icon-button-light splide__arrow splide__arrow--prev">
+                    <span class="material-icons chevron_left" aria-hidden="true"></span>
+                </button>
+                <button type="button" is="paper-icon-button-light" data-ripple="false" data-direction="right" title="Next" class="emby-scrollbuttons-button paper-icon-button-light splide__arrow splide__arrow--next">
+                    <span class="material-icons chevron_right" aria-hidden="true"></span>
+                </button>
+            </div>
+        </div>
+        <div class="editorsChoicePlayPauseContainer">
+            <button class="splide__toggle emby-scrollbuttons-button paper-icon-button-light" type="button">
+                <span class="splide__toggle__play material-icons play_arrow" aria-hidden="true"></span>
+                <span class="splide__toggle__pause material-icons pause" aria-hidden="true"></span>
+            </button>
+        </div>
+        <div class="splide__track">
+            <div is="emby-itemscontainer" class="editorsChoiceItemsContainer splide__list animatedScrollX">
+            </div>
+        </div>
+    </div>
+</div>`;
+
+var stylesInjected = false;
 
 const GUID = "70bb2ec1-f19e-46b5-b49a-942e6b96ebae";
 
-// Function to get localized string based on user's language
-function getLocalizedString(key) {
-    const localization = {
-        'watchButton': {
-            'en': 'Watch',
-            'fr': 'Regarder',
-            'es': 'Ver',
-            'de': 'Ansehen',
-            'it': 'Guarda',
-            'pt': 'Assistir',
-            'zh': '观看',
-            'ja': '見る',
-            'ru': 'Смотреть'
-        }
-    };
+// Localization strings
+var localization = {
+    watchButton: {
+        en: "Watch",
+        fr: "Regarder",
+        es: "Ver",
+        de: "Ansehen",
+        it: "Guarda",
+        pt: "Assistir",
+        zh: "观看",
+        ja: "見る",
+        ru: "Смотреть",
+    },
+};
 
-    const userLanguage = navigator.language.slice(0, 2); // Retrieve the first two characters of the user's language
-    return (localization[key] && localization[key][userLanguage]) ||
-       (localization[key] && localization[key]['en']); // Fallback to English if the user's language is not available
+// Cache user language
+var userLanguage = navigator.language.slice(0, 2);
+
+function getLocalizedString(key) {
+    return (localization[key] && localization[key][userLanguage]) || (localization[key] && localization[key]["en"]);
+}
+
+// Fisher-Yates shuffle
+function shuffle(array) {
+    var result = array.slice();
+    for (var i = result.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var temp = result[i];
+        result[i] = result[j];
+        result[j] = temp;
+    }
+    return result;
+}
+
+// Escape HTML to prevent XSS
+function escapeHtml(text) {
+    if (!text) return "";
+    var div = document.createElement("div");
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Cache screen dimensions
+var bannerImageWidth = Math.max(window.screen.width, window.screen.height);
+
+// Build backdrop URL for an item
+function getBackdropUrl(itemId, reduceImageSizes) {
+    var size = reduceImageSizes ? "?width=" + bannerImageWidth : "";
+    return "../Items/" + itemId + "/Images/Backdrop/0" + size;
+}
+
+// Build slide HTML for a single favourite item
+function buildSlideHtml(favourite, data, baseUrl) {
+    var communityRating = favourite.community_rating ? favourite.community_rating.toFixed(1) : 0;
+
+    // skip rating if it is 0 - a perfect zero means the metadata provider has no score so is misrepresentative
+    var ratingHtml = communityRating != 0 ? '<div class="editorsChoiceItemRating starRatingContainer"><span class="material-icons starIcon star"></span>' + communityRating + "</div>" : "";
+
+    // Logo or title fallback
+    var logoImageSize = data.reduceImageSizes ? "?width=300" : "";
+    var escapedName = escapeHtml(favourite.name);
+    var logoHtml = favourite.hasLogo ? '<img class="editorsChoiceItemLogo" loading="lazy" src="../Items/' + favourite.id + "/Images/Logo/0" + logoImageSize + '" alt="' + escapedName + '"/>' : '<h1 class="editorsChoiceItemTitle">' + escapedName + "</h1>";
+
+    // Overview
+    var overviewHtml = favourite.overview ? '<p class="editorsChoiceItemOverview">' + escapeHtml(favourite.overview) + "</p>" : "";
+
+    // Button
+    var buttonHtml = '<button is="emby-button" class="editorsChoiceItemButton raised button-submit block emby-button"><span>' + getLocalizedString("watchButton") + "</span></button>";
+
+    var backdropUrl = getBackdropUrl(favourite.id, data.reduceImageSizes);
+
+    return '<a href="' + baseUrl + "#/details?id=" + favourite.id + '" ' + "onclick=\"Emby.Page.showItem('" + favourite.id + "'); return false;\" " + 'class="editorsChoiceItemBanner splide__slide" ' + "style=\"background-image:url('" + backdropUrl + "');\">" + "<div>" + logoHtml + ratingHtml + overviewHtml + buttonHtml + "</div></a>";
 }
 
 // Setup slider
 function setup() {
     console.log("Attempting creation of editors choice slider.");
-    $('.homeSectionsContainer').each((index, elem) => {
-        if (!$(elem).hasClass('editorsChoiceAdded')) {
-            console.log("Fetching favourites data from API...");
-            ApiClient.fetch({url: ApiClient.getUrl('/EditorsChoice/favourites'), type: 'GET'}).then(function(response) {
-                response.json().then(function(data) {
-                    // If configured to hide on TV layout, and the page has layout-tv, skip rendering
-                    if (data.hideOnTvLayout && document.documentElement.classList.contains('layout-tv')) {
-                        console.log('Editors Choice: hidden on TV layout by configuration.');
-                        return;
-                    }
-                    var favourites = shuffle(data.favourites);
 
-                    var containerElem = $(container);
-                    var containerId = 'editorsChoice-' + Date.now();
-                    containerElem.first().attr('id', containerId); // add unique id to container element to handle duplicate indexPages
-                    $(elem).prepend(containerElem);
+    var $containers = $(".homeSectionsContainer").not(".editorsChoiceAdded");
+    if ($containers.length === 0) return;
 
+    $containers.each(function () {
+        var $elem = $(this);
+
+        console.log("Fetching favourites data from API...");
+        ApiClient.fetch({ url: ApiClient.getUrl("/EditorsChoice/favourites"), type: "GET" })
+            .then(function (response) {
+                return response.json();
+            })
+            .then(function (data) {
+                // Check if already processed
+                if ($elem.hasClass("editorsChoiceAdded")) return;
+
+                var isTvLayout = document.documentElement.classList.contains("layout-tv");
+
+                // If configured to hide on TV layout, skip rendering
+                if (data.hideOnTvLayout && isTvLayout) {
+                    console.log("Editors Choice: hidden on TV layout by configuration.");
+                    return;
+                }
+
+                // Inject styles
+                if (!stylesInjected) {
+                    $("head").append(editorsChoiceStyles);
+                    stylesInjected = true;
+                }
+
+                var favourites = shuffle(data.favourites);
+                if (favourites.length === 0) return;
+
+                var containerId = "editorsChoice-" + Date.now();
+                var $containerElem = $(containerTemplate);
+                $containerElem.first().attr("id", containerId);
+                $elem.prepend($containerElem);
+
+                // TV layout focus handling - redirect focus from scroll buttons to Home tab
+                if (isTvLayout) {
                     var focusResolved = false;
-                    $('.layout-tv #' + containerId + ' .emby-scrollbuttons button').on('focus', function () {
-                        if (!focusResolved) {
-                            $('[is="emby-tabs"] .emby-button').first().trigger('focus');
+                    var $homeTab = $(".emby-tab-button").first();
+                    $("#" + containerId + " .emby-scrollbuttons button").on("focus", function () {
+                        if (!focusResolved && $homeTab.length) {
+                            $homeTab.focus();
                             focusResolved = true;
                         }
                     });
+                }
 
-                    // Add heading if exists
-                    if ('heading' in data) {
-                        $(containerElem).prepend(`<h2 class="sectionTitle sectionTitle-cards">${data.heading}</h2>`);
-                    }
+                // Add heading if exists
+                if (data.heading) {
+                    $containerElem.prepend('<h2 class="sectionTitle sectionTitle-cards">' + escapeHtml(data.heading) + "</h2>");
+                }
 
-                    favourites.forEach((favourite, i) => {
+                // Calculate baseUrl
+                var baseUrl = Emby.Page.baseUrl() + "/";
+                if (window.location.href.indexOf("/index.html") !== -1) {
+                    baseUrl += "index.html";
+                }
 
-                        // Process star rating
-                        var communityRating = 0;
+                // Build HTML
+                var slidesHtml = favourites
+                    .map(function (favourite) {
+                        return buildSlideHtml(favourite, data, baseUrl);
+                    })
+                    .join("");
 
-                        if ('community_rating' in favourite) {
-                            communityRating = favourite.community_rating.toFixed(1);
-                        }
+                $("#" + containerId + " .editorsChoiceItemsContainer").html(slidesHtml);
 
-                        var editorsChoiceItemRating = `<div class='editorsChoiceItemRating starRatingContainer'><span class='material-icons starIcon star'></span>${communityRating}</div>`;
+                $elem.addClass("editorsChoiceAdded");
 
-                        // skip rating if it is 0 - a perfect zero means the metadata provider has no score so is misrepresentative
-                        if (communityRating == 0) {
-                            editorsChoiceItemRating = "";
-                        }
+                if (data.autoplay) {
+                    $("#" + containerId + " .editorsChoicePlayPauseContainer").show();
+                }
 
-                        // Process logo
-                        var logoImageSize = "";
-                        if (data.reduceImageSizes) {
-                            logoImageSize = "?width=300";
-                        }
-                        var editorsChoiceItemLogo = `<img class='editorsChoiceItemLogo' src='../Items/${favourite.id}/Images/Logo/0${logoImageSize}' alt='${favourite.name}'/>`;
-                        if (!favourite.hasLogo) editorsChoiceItemLogo = `<h1 class="editorsChoiceItemTitle">${favourite.name}</h1>`;
-
-                        // Process item description
-                        if (!('overview' in favourite)) {
-                            favourite.overview = "";
-                        }
-
-                        var editorsChoiceItemOverview = `<p class='editorsChoiceItemOverview'>${favourite.overview}</p>`;
-
-                        if (favourite.overview == "") {
-                            editorsChoiceItemOverview = "";
-                        }
-
-                        // Process button
-                        let editorsChoiceItemButton = `<button is='emby-button' class='editorsChoiceItemButton raised button-submit block emby-button'> <span>${getLocalizedString('watchButton')}</span> </button>`;
-
-                        // Sometimes the path will be /web/index.html#/home.html, other times it will be /web/#/home.html
-                        var baseUrl = Emby.Page.baseUrl() + '/';
-                        if (window.location.href.includes('/index.html')) {
-                            baseUrl += 'index.html';
-                        }
-
-                        // Process banner
-                        var bannerImageWidth = Math.max(window.screen.width, window.screen.height);
-                        var bannerImageSize = "";
-                        if (data.reduceImageSizes) {
-                            bannerImageSize = "?width=" + bannerImageWidth;
-                        }
-                        let editorsChoiceItemBanner = `<a href='${baseUrl}#/details?id=${favourite.id}' onclick="Emby.Page.showItem('${favourite.id}'); return false;" class='editorsChoiceItemBanner splide__slide' style="background-image:url('../Items/${favourite.id}/Images/Backdrop/0${bannerImageSize}');"><div> ${editorsChoiceItemLogo} ${editorsChoiceItemRating} ${editorsChoiceItemOverview} ${editorsChoiceItemButton}</div></a>`;
-                        $('#' + containerId + ' .editorsChoiceItemsContainer').append(editorsChoiceItemBanner);
-
-                    });
-
-                    $(elem).addClass('editorsChoiceAdded');
-
-                    if (data.autoplay) {
-                        $('.editorsChoicePlayPauseContainer').show();
-                    }
-
-                    new Splide( '#' + containerId + ' .splide', {
-                        type: 'loop',
-                        autoplay: data.autoplay,
-                        interval: data.autoplayInterval,
-                        pagination: false,
-                        keyboard: true,
-                        height: `${data.bannerHeight}px`
-                      }).mount();
-
-                });
+                new Splide("#" + containerId + " .splide", {
+                    type: "loop",
+                    autoplay: data.autoplay,
+                    interval: data.autoplayInterval,
+                    pagination: false,
+                    keyboard: true,
+                    height: data.bannerHeight + "px",
+                }).mount();
+            })
+            .catch(function (error) {
+                console.error("Editors Choice: Failed to load favourites", error);
             });
-        }
     });
 }
 
-window.onload = function() {
-    var sliderScript = document.createElement('script');
-    sliderScript.type = 'text/javascript';
-    sliderScript.src = 'https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/js/splide.min.js';
+window.onload = function () {
+    var sliderScript = document.createElement("script");
+    sliderScript.type = "text/javascript";
+    sliderScript.src = "../EditorsChoice/splide.js";
 
-    var sliderStyle = document.createElement('link');
-    sliderStyle.rel = 'stylesheet';
-    sliderStyle.href = 'https://cdn.jsdelivr.net/npm/@splidejs/splide@4.1.4/dist/css/splide.min.css';
+    var sliderStyle = document.createElement("link");
+    sliderStyle.rel = "stylesheet";
+    sliderStyle.href = "../EditorsChoice/splide.css";
 
     document.head.appendChild(sliderScript);
     document.head.appendChild(sliderStyle);
 
-    // Detect if container is ready to setup slider
-    var target = document.getElementById('reactRoot');
+    var target = document.getElementById("reactRoot");
+    if (!target) {
+        console.warn("Editors Choice: reactRoot not found");
+        return;
+    }
 
-    // Create an observer instance
-    var observer = new MutationObserver(function( mutations ) {
-        mutations.forEach(function( mutation ) {
-            var newNodes = mutation.addedNodes; // DOM NodeList
-            if( newNodes !== null ) { // If there are new nodes added
-                var $nodes = $( newNodes ); // jQuery set
-                $nodes.each(function() {
-                    var $node = $( this );
-                    if( $node.hasClass('section0') && !$node.hasClass('editorsChoiceAdded')) {
+    // MutationObserver with debounce
+    var setupPending = false;
+    var observer = new MutationObserver(function (mutations) {
+        if (setupPending) return;
+
+        for (var i = 0; i < mutations.length; i++) {
+            var mutation = mutations[i];
+            if (mutation.type !== "childList" || !mutation.addedNodes.length) continue;
+
+            for (var j = 0; j < mutation.addedNodes.length; j++) {
+                var node = mutation.addedNodes[j];
+                if (node.nodeType === 1 && node.classList && node.classList.contains("section0") && !node.classList.contains("editorsChoiceAdded")) {
+                    setupPending = true;
+                    setTimeout(function () {
                         setup();
-                    }
-                });
+                        setupPending = false;
+                    }, 50);
+                    return;
+                }
             }
-        });
+        }
     });
-    observer.observe(target, {attributes: true, childList: true, characterData: true, subtree: true});
 
-    // Remind user that their favourites will be public when they add a new favourite.
-    $('body').on('click', '[is="emby-ratingbutton"]', function () {
-        if (!$(this).hasClass('ratingbutton-withrating')) {
+    observer.observe(target, { childList: true, subtree: true });
+
+    // Remind user that their favourites will be public when they add a new favourite
+    $(document.body).on("click", '[is="emby-ratingbutton"]', function () {
+        var $btn = $(this);
+        if (!$btn.hasClass("ratingbutton-withrating")) {
             ApiClient.getPluginConfiguration(GUID).then(function (data) {
-                if (ApiClient.getCurrentUserId() == data.EditorUserId) {
+                if (ApiClient.getCurrentUserId() === data.EditorUserId) {
                     Dashboard.confirm("You are the featured items editor! Your favourites will be displayed on the home page for all users, if enabled.");
                 }
             });

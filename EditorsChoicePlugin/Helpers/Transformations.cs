@@ -4,7 +4,7 @@ using MediaBrowser.Common.Net;
 
 namespace EditorsChoicePlugin.Helpers;
 
-public static class Transformations
+public static partial class Transformations
 {
     public static string IndexTransformation(PatchRequestPayload payload)
     {
@@ -18,10 +18,13 @@ public static class Transformations
 
         string script = $"<script FileTransformation=\"true\" plugin=\"EditorsChoice\" defer=\"defer\" src=\"{basePath}/EditorsChoice/script\"></script>";
 
-        string text = Regex.Replace(payload.Contents!, "(</body>)", $"{script}$1");
+        string text = BodyRegex().Replace(payload.Contents ?? string.Empty, $"{script}$1");
 
         return text;
     }
+
+    [GeneratedRegex("(</body>)")]
+    private static partial Regex BodyRegex();
 }
 
 public class PatchRequestPayload
